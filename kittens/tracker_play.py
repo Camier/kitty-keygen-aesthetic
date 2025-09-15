@@ -5,7 +5,9 @@ Usage:
   kitty +kitten tracker_play.py [--loop] [--build] [--shuffle] [--next|--prev] [path_or_dir]
 
 Players tried in order:
+  - openmpt123 (libopenmpt), command: openmpt123 -q <file>
   - xmp (libxmp), command: xmp -q <file>
+  - mpv, command: mpv --no-video --really-quiet <file>
   - ffplay (ffmpeg), command: ffplay -nodisp -autoexit -loglevel error <file>
 
 Default source directory: ~/.config/kitty/music
@@ -22,17 +24,33 @@ HOME = Path.home()
 MUSIC_DIR = HOME / '.config' / 'kitty' / 'music'
 PLAYLIST = HOME / '.cache' / 'kitty' / 'playlist.json'
 
-EXTS = {'.mod', '.xm', '.s3m', '.it', '.itgz', '.xmz', '.s3mz', '.mod.gz'}
+BASE_EXTS = {'.mod', '.xm', '.s3m', '.it'}
+COMPRESSED_SUFFIXES = {'.gz', '.xz', '.bz2', '.zst'}
 
 
 def which(cmd: str) -> bool:
     return subprocess.run(['bash', '-lc', f'command -v {cmd} >/dev/null 2>&1'], check=False).returncode == 0
 
 
+def _is_module_file(path: Path) -> bool:
+    sfx = [e.lower() for e in path.suffixes]
+    if not sfx:
+        return False
+    # Plain module
+    if sfx[-1] in BASE_EXTS:
+        return True
+    # Compressed module: mod.gz, it.gz, xm.gz, s3m.gz; or packed as .itgz/.xmz/.s3mz
+    if len(sfx) >= 2 and sfx[-2] in BASE_EXTS and sfx[-1] in COMPRESSED_SUFFIXES:
+        return True
+    if sfx[-1] in {'.itgz', '.xmz', '.s3mz'}:
+        return True
+    return False
+
+
 def scan_tracks(dirpath: Path):
     if not dirpath.exists():
         return []
-    return [str(f) for f in sorted(dirpath.iterdir()) if f.is_file() and f.suffix.lower() in EXTS]
+    return [str(f) for f in sorted(dirpath.iterdir()) if f.is_file() and f.stat().st_size > 0 and _is_module_file(f)]
 
 
 def load_playlist():
@@ -53,8 +71,8 @@ def is_safe_track(track_path: Path) -> bool:
         resolved = track_path.resolve()
         return (resolved.is_relative_to(MUSIC_DIR.resolve()) or
                 resolved.is_relative_to(HOME.resolve())) and \
-               resolved.suffix.lower() in EXTS and \
-               resolved.is_file()
+               _is_module_file(resolved) and \
+               resolved.is_file() and resolved.stat().st_size > 0
     except (OSError, ValueError):
         return False
 
@@ -73,10 +91,26 @@ def pick_track(p: Path) -> Path:
     return None
 
 
+def ffmpeg_supports(path: Path) -> bool:
+    # Detect if local ffmpeg build can demux this file via ffprobe
+    try:
+        r = subprocess.run([
+            'ffprobe', '-v', 'error', '-show_entries', 'format=format_name',
+            '-of', 'default=nw=1:nk=1', os.fspath(path)
+        ], capture_output=True, text=True, cwd=HOME)
+        return r.returncode == 0 and bool(r.stdout.strip())
+    except Exception:
+        return False
+
+
 def play(track: Path) -> int:
     if track is None:
         print('No music files found in music directory.', file=sys.stderr)
         print('Drop some tracker modules (.mod, .xm, .s3m, .it) into ~/.config/kitty/music/', file=sys.stderr)
+        try:
+            input('Press Enter to close...')
+        except Exception:
+            pass
         return 1
 
     if not is_safe_track(track):
@@ -85,11 +119,30 @@ def play(track: Path) -> int:
 
     safe_path = os.fspath(track.resolve())
 
+    # Try players in order, skipping ffplay when ffmpeg lacks module support
+    players = []
+    if which('openmpt123'):
+        players.append(('openmpt123', ['openmpt123', '-q', safe_path]))
     if which('xmp'):
-        return subprocess.run(['xmp', '-q', safe_path], cwd=HOME).returncode
-    if which('ffplay'):
-        return subprocess.run(['ffplay', '-nodisp', '-autoexit', '-loglevel', 'error', safe_path], cwd=HOME).returncode
-    print('No suitable player found (install xmp or ffmpeg).', file=sys.stderr)
+        players.append(('xmp', ['xmp', '-q', safe_path]))
+    if which('mpv'):
+        players.append(('mpv', ['mpv', '--no-video', '--really-quiet', '--force-window=no', safe_path]))
+    if which('ffplay') and ffmpeg_supports(track):
+        players.append(('ffplay', ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'error', safe_path]))
+
+    for name, cmd in players:
+        rc = subprocess.run(cmd, cwd=HOME).returncode
+        if rc == 0:
+            return 0
+    # If we got here, nothing worked
+    print('No suitable tracker player succeeded.', file=sys.stderr)
+    print('Install one of: openmpt123 (libopenmpt), xmp, or mpv with module support.', file=sys.stderr)
+    print('Fedora example: sudo dnf install openmpt123 xmp mpv', file=sys.stderr)
+    # Keep the tab visible long enough to read the message when launched via Kitty
+    try:
+        input('Press Enter to close...')
+    except Exception:
+        pass
     return 127
 
 
@@ -142,7 +195,9 @@ def main(argv):
         try:
             while True:
                 t = pick_track(target)
-                play(t)
+                rc = play(t)
+                if rc != 0:
+                    return rc
         except KeyboardInterrupt:
             return 0
     else:
