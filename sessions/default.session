@@ -1,0 +1,20 @@
+# DEFAULT SESSION - Basic tabs for common locations
+
+new_tab 🏠 HOME
+cd ~
+launch bash
+
+new_tab 💼 PROJECTS
+cd ~/projects
+launch bash
+
+new_tab ⚙️ CONFIG
+cd ~/.config
+launch bash
+
+new_tab 📥 DOWNLOADS
+cd ~/Downloads
+launch bash
+
+goto_tab 1
+

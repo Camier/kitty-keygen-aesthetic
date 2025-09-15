@@ -1,0 +1,31 @@
+# DEVELOPMENT SESSION - Editor, Git, Build, Monitor
+
+new_tab 📝 EDITOR
+cd ~/projects
+layout tall
+launch --type=window --title="nvim" nvim
+launch --type=window --title="Terminal" bash
+
+new_tab 🔀 GIT
+cd ~/projects
+launch --type=window --title="Git Status" sh -c 'watch -n 2 "git status -sb 2>/dev/null; echo; git log --oneline -5 2>/dev/null"'
+launch --type=window --location=vsplit --title="Git UI" sh -c 'gitui || lazygit || tig || bash'
+
+new_tab 🔨 BUILD
+cd ~/projects
+layout horizontal
+launch --type=window --title="Build" bash
+launch --type=window --title="Test" bash
+launch --type=window --title="Logs" sh -c 'tail -f /dev/null'
+
+new_tab 📊 MONITOR
+cd ~
+launch --type=window --title="htop" htop
+launch --type=window --location=hsplit --title="Logs" sh -c 'journalctl -f --user'
+
+new_tab 📚 DOCS
+cd ~/projects
+launch --type=window --title="Documentation" bash
+
+goto_tab 1
+

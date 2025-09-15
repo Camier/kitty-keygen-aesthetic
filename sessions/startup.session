@@ -1,0 +1,7 @@
+# Startup session: splash art + work tab
+
+# Tab 1: work shell (open first for robustness)
+launch --type=tab --cwd ~ zsh
+
+# Tab 2: splash (graceful if ansilove missing)
+launch --type=tab --cwd ~ bash -lc '~/.config/kitty/scripts/splash.sh'
