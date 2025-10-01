@@ -7,10 +7,9 @@ from __future__ import annotations
 
 import curses
 import os
+import subprocess
 from pathlib import Path
 from typing import Optional
-
-from kitty.boss import Boss
 
 # Paths
 HOME = Path.home()
@@ -201,12 +200,37 @@ def main(args: list[str]) -> str:
     """Entry point - returns selected theme name."""
     try:
         selected = curses.wrapper(picker_ui)
+        if selected and not selected.startswith("ERROR:"):
+            # Apply theme directly when run as standalone script
+            apply_theme(selected)
         return selected or ""
     except Exception as e:
         return f"ERROR: {e}"
 
 
-def handle_result(args: list[str], answer: str, target_window_id: int, boss: Boss) -> None:
+def apply_theme(theme_name: str) -> None:
+    """Apply the selected theme and reload config."""
+    try:
+        # Write to current-theme.conf
+        CURRENT_THEME_FILE.write_text(f"include {theme_name}.conf\n")
+
+        # Reload kitty configuration
+        socket_path = f"unix:{HOME}/.cache/kitty/kitty-{os.getenv('USER')}.sock"
+        result = subprocess.run(
+            ["kitty", "@", "--to", socket_path, "load-config"],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode == 0:
+            print(f"\n✓ Applied theme: {theme_name}")
+        else:
+            print(f"\n✗ Failed to reload config: {result.stderr}")
+    except Exception as e:
+        print(f"\n✗ Failed to apply theme: {e}")
+
+
+def handle_result(args: list[str], answer: str, target_window_id: int, boss=None) -> None:
     """Apply the selected theme."""
     if not answer or answer.startswith("ERROR:"):
         if answer.startswith("ERROR:"):
@@ -217,8 +241,13 @@ def handle_result(args: list[str], answer: str, target_window_id: int, boss: Bos
     try:
         CURRENT_THEME_FILE.write_text(f"include {answer}.conf\n")
 
-        # Reload kitty configuration
-        boss.call_remote_control(None, ("load-config",))
+        # Reload kitty configuration using kitty @ command with socket
+        socket_path = f"unix:{HOME}/.cache/kitty/kitty-{os.getenv('USER')}.sock"
+        subprocess.run(
+            ["kitty", "@", "--to", socket_path, "load-config"],
+            check=False,
+            capture_output=True
+        )
 
         print(f"✓ Applied theme: {answer}")
     except Exception as e:
