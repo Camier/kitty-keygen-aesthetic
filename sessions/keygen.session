@@ -1,4 +1,0 @@
-# Keygen Mode: safe session with keygen aesthetic
-launch --type=tab --cwd ~ --title="🎮 Keygen Shell" zsh
-launch --type=tab --cwd ~ --title="🌊 Plasma" python3 ~/.config/kitty/kittens/plasma.py 60
-launch --type=tab --cwd ~ --title="🎨 Art Gallery" python3 ~/.config/kitty/kittens/ansiview.py

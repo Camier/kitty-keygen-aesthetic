@@ -34,3 +34,11 @@ ps aux | grep kitty | head -5
 echo
 echo "GPU information (if relevant):"
 lspci | grep -i vga || echo "No VGA info"
+
+echo
+echo "Dumping parsed config (best-effort)..."
+if kitty --debug-config >/tmp/kitty-debug-config.txt 2>/dev/null; then
+  echo "Wrote /tmp/kitty-debug-config.txt"
+else
+  echo "kitty --debug-config not available; skip"
+fi

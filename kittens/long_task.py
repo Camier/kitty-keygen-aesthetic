@@ -12,6 +12,7 @@ Example:
 
 Notes:
 - Uses bell to trigger window/tab alerts per your config.
+- Sends desktop notifications via notify-send if available.
 - Prints duration summary on completion.
 """
 from __future__ import annotations
@@ -27,6 +28,19 @@ def rc(*args: str) -> None:
     try:
         subprocess.run(["kitty", "@", *args], check=False)
     except Exception:
+        pass
+
+
+def send_notification(title: str, message: str, urgency: str = "normal") -> None:
+    """Send desktop notification if notify-send is available."""
+    try:
+        subprocess.run(
+            ["notify-send", f"--urgency={urgency}", title, message],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
         pass
 
 
@@ -68,10 +82,27 @@ def main(argv: list[str]) -> int:
     # Clear title marker and ring bell for attention
     if shown:
         rc("set-tab-title", "")
+
+    # Determine task status
+    success = proc.returncode == 0
+    status_icon = "✅" if success else "❌"
+    urgency = "normal" if success else "critical"
+
+    # Send desktop notification for long tasks
+    if shown:
+        cmd_str = shlex.join(cmd)
+        if len(cmd_str) > 50:
+            cmd_str = cmd_str[:47] + "..."
+        send_notification(
+            f"{status_icon} Task {('completed' if success else 'failed')}",
+            f"{cmd_str}\n⏱️ Duration: {elapsed:.1f}s",
+            urgency=urgency,
+        )
+
     # Ring bell to trigger visual/audio/tab activity per config
     sys.stdout.write("\a")
     sys.stdout.flush()
-    print(f"\n✅ Task finished in {elapsed:.1f}s: {shlex.join(cmd)}")
+    print(f"\n{status_icon} Task finished in {elapsed:.1f}s: {shlex.join(cmd)}")
     return proc.returncode
 
 

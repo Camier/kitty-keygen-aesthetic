@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Launch Kitty with a named profile (config)
+# Profiles: default, work, demo, stable, gpu-safe, minimal
+set -euo pipefail
+
+CONFIG_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/kitty
+
+usage() {
+  cat <<USAGE
+Usage: kitty-profile <profile> [--] [kitty-args...]
+
+Profiles:
+  default   -> kitty.conf (modular main)
+  work      -> modes/work.conf
+  demo      -> modes/demo.conf
+  stable    -> kitty-stable.conf (includes main)
+  gpu-safe  -> kitty-gpu-safe.conf
+  minimal   -> kitty-minimal.conf
+
+Examples:
+  kitty-profile work
+  kitty-profile demo -- --detach
+USAGE
+}
+
+if [[ $# -lt 1 ]]; then
+  usage; exit 1
+fi
+
+profile=$1; shift || true
+
+case "$profile" in
+  default) cfg="$CONFIG_DIR/kitty.conf" ;;
+  work)    cfg="$CONFIG_DIR/modes/work.conf" ;;
+  demo)    cfg="$CONFIG_DIR/modes/demo.conf" ;;
+  stable)  cfg="$CONFIG_DIR/kitty-stable.conf" ;;
+  gpu-safe) cfg="$CONFIG_DIR/kitty-gpu-safe.conf" ;;
+  minimal) cfg="$CONFIG_DIR/kitty-minimal.conf" ;;
+  -h|--help|help) usage; exit 0 ;;
+  *) echo "Unknown profile: $profile" >&2; usage; exit 1 ;;
+esac
+
+if ! command -v kitty >/dev/null 2>&1; then
+  echo "kitty binary not found in PATH" >&2
+  exit 1
+fi
+
+exec kitty --config="$cfg" "$@"
+

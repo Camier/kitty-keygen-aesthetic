@@ -5,16 +5,13 @@ cd ~
 launch bash
 
 new_tab 💼 PROJECTS
-cd ~/projects
-launch bash
+launch bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec ${SHELL:-bash}'
 
 new_tab ⚙️ CONFIG
 cd ~/.config
 launch bash
 
 new_tab 📥 DOWNLOADS
-cd ~/Downloads
-launch bash
+launch bash -lc 'cd ~/Downloads 2>/dev/null || { mkdir -p ~/Downloads && cd ~/Downloads; }; exec ${SHELL:-bash}'
 
 goto_tab 1
-

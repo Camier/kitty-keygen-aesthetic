@@ -1,31 +1,26 @@
 # DEVELOPMENT SESSION - Editor, Git, Build, Monitor
 
 new_tab 📝 EDITOR
-cd ~/projects
 layout tall
-launch --type=window --title="nvim" nvim
-launch --type=window --title="Terminal" bash
+launch --type=window --title="nvim" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec nvim'
+launch --type=window --title="Terminal" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec ${SHELL:-bash}'
 
 new_tab 🔀 GIT
-cd ~/projects
-launch --type=window --title="Git Status" sh -c 'watch -n 2 "git status -sb 2>/dev/null; echo; git log --oneline -5 2>/dev/null"'
-launch --type=window --location=vsplit --title="Git UI" sh -c 'gitui || lazygit || tig || bash'
+launch --type=window --title="Git Status" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec watch -n 2 "git status -sb 2>/dev/null; echo; git log --oneline -5 2>/dev/null"'
+launch --type=window --location=vsplit --title="Git UI" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; gitui || lazygit || tig || ${SHELL:-bash}'
 
 new_tab 🔨 BUILD
-cd ~/projects
 layout horizontal
-launch --type=window --title="Build" bash
-launch --type=window --title="Test" bash
-launch --type=window --title="Logs" sh -c 'tail -f /dev/null'
+launch --type=window --title="Build" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec ${SHELL:-bash}'
+launch --type=window --title="Test" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec ${SHELL:-bash}'
+launch --type=window --title="Logs" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; tail -f /dev/null'
 
 new_tab 📊 MONITOR
 cd ~
 launch --type=window --title="htop" htop
-launch --type=window --location=hsplit --title="Logs" sh -c 'journalctl -f --user'
+launch --type=window --location=hsplit --title="Logs" bash -lc 'if command -v journalctl >/dev/null; then journalctl -f --user; else printf "journalctl not available\n"; read -p "Press enter to close"; fi'
 
 new_tab 📚 DOCS
-cd ~/projects
-launch --type=window --title="Documentation" bash
+launch --type=window --title="Documentation" bash -lc 'cd ~/projects 2>/dev/null || { mkdir -p ~/projects && cd ~/projects; }; exec ${SHELL:-bash}'
 
 goto_tab 1
-

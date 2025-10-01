@@ -1,63 +1,70 @@
-Kitty Keygen Aesthetic — Quick Guide
+# LAB Kitty Configuration
 
-Assets
-- ANSI/NFO/TXT artwork: ~/.config/kitty/art
-- Tracker modules (MOD/XM/S3M/IT): ~/.config/kitty/music
+Lean-by-default terminal profile with optional scene-inspired extras. The base `kitty.conf` loads only core UI, key bindings, and performance tuning. Additional modules live under `includes/` and can be opt-in when you need them.
 
-Themes
-- Active theme: themes/current-theme.conf (auto-included by kitty.conf)
-- Theme Gallery (overlay): Ctrl+Shift+F6 → browse, preview, apply
-- Theme Cycle: Ctrl+Shift+F1 (next), Ctrl+Shift+Shift+F1 (prev)
-- Quick switch:
-  - Ctrl+Shift+Ctrl+1 → fairlight_cyan
-  - Ctrl+Shift+Ctrl+2 → skidrow_green
-  - Ctrl+Shift+Ctrl+3 → reloaded_magenta
-  - Ctrl+Shift+Ctrl+4 → razor_amber
-- Safe apply script: kittens/theme_apply.py (updates current-theme and reloads)
- - Wal bridge: builds themes/wal-current.conf from wal and sets current-theme
+## Quick Facts
+- Config root: `~/.config/kitty`
+- Main entrypoint: `kitty.conf`
+- Reload: press `Ctrl+Shift+F5` or run `kitty @ load-config`
+- Remote control socket: `unix:$HOME/.cache/kitty/kitty-$USER.sock` (exported to child shells)
+- Automation watcher: `watchers/activity.py` keeps tab titles in sync with running commands
+- Local overrides: drop `.conf` files in `local/`; they load last
 
-Effects and Tools
-- Ctrl+Shift+P/O/S → Plasma/Fire/Scroller
-- Ctrl+Shift+M → Play a random module
-- Ctrl+Shift+Alt+M → Loop random modules
-  - Requires player: openmpt123 (recommended), xmp, or mpv
-  - Fedora: sudo dnf install openmpt123 xmp mpv
-  - Note: Some ffmpeg/ffplay builds cannot decode .it/.xm/.s3m/.mod
-  - Sample file: ~/.config/kitty/music/demo.it (placeholder, may be empty)
-Music controls
-- Ctrl+Shift+Shift+M → Music Picker (overlay)
-- Ctrl+Shift+Ctrl+Alt+., Ctrl+Shift+Ctrl+Alt+, → Next/Prev track
-- Ctrl+Shift+Ctrl+Alt+S → Toggle shuffle
+## Everyday Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+Enter` | New window in current working dir |
+| `Ctrl+Shift+T` | New tab |
+| `Ctrl+Shift+[` / `]` | Previous / next window |
+| `Ctrl+Shift+Left` / `Right` | Previous / next tab |
+| `Ctrl+Shift+F5` | Reload configuration |
+| `Right Click` | Select entire command output (shell integration) |
+| `F1` | Show last command output |
+| `Ctrl+Shift+F2` | Open config file in editor |
 
-Layout & Navigation
-- Ctrl+Shift+Space → cycle layouts
-- Ctrl+Shift+Ctrl+H/J/K/L → focus left/down/up/right
-- Ctrl+Shift+Ctrl+Shift+H/J/K/L → swap windows left/down/up/right
-- Ctrl+Shift+Shift+T → toggle tab bar
+Full bindings live in `includes/keymaps.conf` (grouped by feature area).
 
-Backgrounds
-- Background Gallery (overlay): Ctrl+Shift+F7 → browse/preview/apply images from ~/Pictures
-- Clear background: press 'n' inside the gallery or remove generated/background.conf
- - Wal theme from wallpaper: Ctrl+Shift+Alt+W (apply), Ctrl+Shift+Alt+Shift+W (restore)
-   - Requires pywal (pip install --user pywal); uses current background image when run without args
+## Profiles & Toggles
+Trigger these from the command palette (`Ctrl+Shift+P`) or the dedicated keys:
+- Low-latency mode: `Ctrl+Shift+F2` → writes `local/perf-low.conf`
+- Focus follows mouse: `Ctrl+Shift+F3` → toggles `local/focus-follows-mouse.conf`
+- Tmux passthrough: `Ctrl+Shift+F4` → toggles `local/tmux-passthrough.conf`
+- Battery saver: `Ctrl+Shift+P`, `B` → toggles `local/battery.conf`
+- Font autoscale: `Ctrl+Shift+P`, `F`
+- Watch + auto reload: `Ctrl+Shift+P`, `W` (uses `scripts/watch-reload.sh`)
+- Transfer helpers: `Ctrl+Shift+P`, `U` downloads, `Y` uploads via `kitty @ remote-transfer`
+- Status panel: `Ctrl+Shift+P`, `M` toggles the htop panel
+- Broadcast input: `Ctrl+Shift+B` targets all panes in the current tab
 
-Help
-- Help Center (overlay): Ctrl+Shift+F9 → searchable, scrollable help for all features
+`local/README.md` documents every generated override. Removing a file restores the upstream default.
 
-Kitten Menu
-- Ctrl+Shift+F8 → command palette for local kittens (Theme/Background galleries, Plasma, Fire, Scroller, ANSI, Tracker, etc.)
+## Directory Map
+```
+~/.config/kitty/
+├── kitty.conf                # Main orchestrator
+├── includes/                 # Modular configuration blocks
+│   ├── core.conf             # Shared shell + socket settings
+│   ├── ui.conf               # Fonts, window chrome, URL handling
+│   ├── keymaps.conf          # Primary key bindings
+│   └── perf.conf             # Balanced performance defaults
+├── themes/                   # Color schemes
+├── kittens/                  # Local helper kittens (palette, help center, utilities)
+├── scripts/                  # Utility scripts (toggles, remote control helpers)
+├── modes/                    # Standalone profiles for work/demo/etc
+├── sessions/                 # Prebuilt session layouts
+└── local/                    # Auto-generated overrides (gitignored)
+```
 
-Command Palette
-- Ctrl+Shift+P then P → global command palette (search actions: windows/tabs/splits, themes, backgrounds, sessions, modes, effects)
+## Maintenance Tips
+- Use `kitty +kitten diff-conf` to inspect live settings versus files.
+- `scripts/watch-reload.sh` relies on `inotifywait`; install `inotify-tools` for best results.
+- Keep `kitty --version` at ≥ `0.42.2` to ensure `shell_integration enabled` stays compatible.
 
-Ambient Theme
-- Ctrl+Shift+P then A → apply ambient theme (time-of-day)
+## Troubleshooting
+| Symptom | Check |
+|---------|-------|
+| Remote control failures | Socket value: `echo $KITTY_LISTEN_ON`; should be `unix:$HOME/.cache/kitty/kitty-$USER.sock` |
+| Config reload prints errors | Run `kitty +kitten debug-config` to locate parse issues |
+| Watcher doesn’t reload | Ensure `inotifywait` is installed or rerun `watch-reload.sh start` |
 
-Long Tasks
-- Wrapper kitten: python3 ~/.config/kitty/kittens/long_task.py 10 -- <cmd>
-  - Marks tab while running; bell on completion; prints duration
-  - Tip: combine with notify_on_cmd_finish (enabled) for desktop notifications
-
-Notes
-- Theme browser, font picker, and ANSI viewer hotkeys are disabled by default for stability.
-- For presentations: start Demo/Keygen modes (see modes/*.conf) which use low-latency performance.
+Enjoy the clean base setup, and opt into the flashy bits only when you need them.
